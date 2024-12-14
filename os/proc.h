@@ -2,7 +2,7 @@
 #define PROC_H
 
 #include "types.h"
-
+#include "syscall_ids.h"
 #define NPROC (16)
 
 // Saved registers for kernel context switches.
@@ -35,6 +35,8 @@ struct proc {
 	uint64 kstack; // Virtual address of kernel stack
 	struct trapframe *trapframe; // data page for trampoline.S
 	struct context context; // swtch() here to run process
+	uint64 starttime;
+	unsigned int syscall_times[MAX_SYSCALL_NUM];
 	/*
 	* LAB1: you may need to add some new fields here
 	*/
