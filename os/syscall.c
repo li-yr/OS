@@ -5,7 +5,7 @@
 #include "timer.h"
 #include "trap.h"
 #include "proc.h"
-
+#include "task.h"
 uint64 sys_write(int fd, uint64 va, uint len)
 {
 	debugf("sys_write fd = %d va = %x, len = %d", fd, va, len);
@@ -58,17 +58,10 @@ uint64 sys_sbrk(int n)
         return addr;	
 }
 
-uint64 sys_task_info(TaskInfo *ti)
+uint64 sys_task_info(TaskInfo *ti){
 	// YOUR CODE
-
-
-	/* The code in `ch3` will leads to memory bugs*/
-	TimeVal *val_temp;
-	struct proc *p = curr_proc();
-	uint64 cycle = get_cycle();
-	val_temp->sec = cycle / CPU_FREQ;
-	val_temp->usec = (cycle % CPU_FREQ) * 1000000 / CPU_FREQ;
-	copyout(p->pagetable, (uint64)val, (char *)&val_temp,sizeof(*val));
+	struct proc *proc_ptr = curr_proc();
+	
 	return 0;
 }
 
