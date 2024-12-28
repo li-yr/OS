@@ -133,15 +133,17 @@ uint64 sys_spawn(uint64 va)
 
 uint64 sys_mmap(void *addr, unsigned long long len, int port, int flag, int fd){
 	debugf("somw");
-	flag = 0;
-	fd = 0;
-	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
-		// printf("port input error");
+  	flag = 0;
+
+  	fd = 0;
+
+  	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
 		return -1;
-	}
-	if (((uint64)addr & (PAGE_SIZE - 1)) != 0) {
+		}
+
+  	if (((uint64)addr & (PAGE_SIZE - 1)) != 0) {
 		return -1;
-	}
+    }
 	len = PGROUNDUP(len);
 	uint64 end = (uint64)addr + len;
 	struct proc *p = curr_proc();
