@@ -39,13 +39,12 @@ uint64 sys_gettimeofday(TimeVal *val, int _tz) // TODO: implement sys_gettimeofd
 
 
 	/* The code in `ch3` will leads to memory bugs*/
-	TimeVal *val_temp;
+	TimeVal val_temp;
 	struct proc *p = curr_proc();
 	uint64 cycle = get_cycle();
-	val_temp->sec = cycle / CPU_FREQ;
-	val_temp->usec = (cycle % CPU_FREQ) * 1000000 / CPU_FREQ;
-	copyout(p->pagetable, (uint64)val, (char *)&val_temp,sizeof(*val));
-	return 0;
+	val_temp.sec = cycle / CPU_FREQ;
+	val_temp.usec = (cycle % CPU_FREQ) * 1000000 / CPU_FREQ;
+	return copyout(p->pagetable, (uint64)val, (char *)&val_temp,sizeof(*val));
 }
 
 uint64 sys_sbrk(int n)
@@ -65,9 +64,8 @@ uint64 sys_task_info(TaskInfo *ti){
 	uint64 cycle = get_cycle();
 	uint64 now = (cycle) * 1000 / CPU_FREQ;
 	ti_temp.time = now - curr_proc()->starttime;
-	memmove(ti_temp.syscall_times, curr_proc()->syscall_times, sizeof(curr_proc()->syscall_times));
-	copyout(curr_proc()->pagetable, (uint64)ti, (char *)&ti_temp,sizeof(*ti));
-	return 0;
+	memmove(ti_temp.syscall_times, curr_proc()->syscall_times, sizeof(ti_temp.syscall_times));
+	return copyout(curr_proc()->pagetable, (uint64)ti, (char *)&ti_temp,sizeof(*ti));
 }
 
 
