@@ -171,36 +171,23 @@ uint64 sys_mmap(void *addr, unsigned long long len, int port, int flag, int fd){
 }
 
 
-uint64 sys_munmap(void *addr, uint64 len, int port, int flag, int fd)
-{
+uint64 sys_munmap(void *addr, unsigned long long len, int port, int flag, int fd){
 	flag = 0;
 	fd = 0;
-	port = 0;
-
-	if (len == 0) {
-		return 0;
-	}
-	if (len > ((uint64)1 << 30)) {
+	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
+		// panic("port input error");
 		return -1;
 	}
-
-	if (((uint64)addr & (PAGE_SIZE - 1)) != 0) { // Not aligned as PAGE_SIZE
-		return -1;
-	}
-
 	len = PGROUNDUP(len);
-	uint64 end = (uint64)addr + len;
+	uint64 end = (uint64)addr + (uint64)len;
 	pagetable_t pg = curr_proc()->pagetable;
-
-	for (uint64 va = (uint64)addr; va != end; va += PAGE_SIZE) {
-		uint64 pa = walkaddr(pg, va);
+	for (uint64 vaddr = (uint64)addr; vaddr != end; vaddr += PAGE_SIZE) {
+		uint64 pa = walkaddr(pg, vaddr);
 		if (pa == 0) {
-			debugf("In sys_munmap: One page is not mapped!");
+			// panic("sys_munmap one page is not mapped!");
 			return -1;
 		}
-		debugf("In munmap: Will free pa: %p originally mapped to va: %p",
-		       pa, va);
-		uvmunmap(pg, va, 1, 1);
+		uvmunmap(pg, vaddr, 1, 1);
 	}
 	return 0;
 }
@@ -264,11 +251,10 @@ void syscall()
 		ret = sys_spawn(args[0]);
 		break;
 	case SYS_mmap:
-		ret = sys_mmap((void *)args[0], (uint64)args[1], (int)args[2],
-			       (int)args[3], (int)args[4]);
+		ret = sys_mmap((void *)args[0], (uint64)args[1], (int)args[2],(int)args[3], (int)args[4]);
 		break;
 	case SYS_munmap:
-		ret = sys_munmap((void *)args[0], (uint64)args[1]);
+		ret = sys_mmap((void *)args[0], (uint64)args[1], (int)args[2],(int)args[3], (int)args[4]);
 		break;
 	case SYS_task_info:
 		ret = sys_task_info((TaskInfo *)args[0]);
