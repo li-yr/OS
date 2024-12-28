@@ -88,7 +88,7 @@ void scheduler(void)
 				/*
 				* LAB1: you may need to init proc start time here
 				*/
-			if(p->starttime == 0){
+				if(p->starttime == 0){
 					uint64 cycle = get_cycle();
 					p->starttime = (cycle) * 1000 / CPU_FREQ;
 				}
