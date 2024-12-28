@@ -3,7 +3,7 @@
 
 #include "riscv.h"
 #include "types.h"
-
+#include "syscall_ids.h"
 #define NPROC (16)
 
 // Saved registers for kernel context switches.
@@ -30,7 +30,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-	enum procstate state; // Process state
+	enum procstate state; // Process stated
 	int pid; // Process ID
 	pagetable_t pagetable; // User page table
 	uint64 ustack;
@@ -40,6 +40,8 @@ struct proc {
 	uint64 max_page;
 	uint64 program_brk;
 	uint64 heap_bottom;
+	uint64 starttime;
+	unsigned int syscall_times[MAX_SYSCALL_NUM];
 	/*
 	* LAB1: you may need to add some new fields here
 	*/

@@ -60,11 +60,67 @@ uint64 sys_sbrk(int n)
 
 uint64 sys_task_info(TaskInfo *ti){
 	// YOUR CODE
-	struct proc *proc_ptr = curr_proc();
-	
+	TaskInfo ti_temp;
+	ti_temp.status = Running;
+	uint64 cycle = get_cycle();
+	uint64 now = (cycle) * 1000 / CPU_FREQ;
+	ti_temp.time = now - curr_proc()->starttime;
+	memmove(ti_temp.syscall_times, curr_proc()->syscall_times, sizeof(curr_proc()->syscall_times));
+	copyout(curr_proc()->pagetable, (uint64)ti, (char *)&ti_temp,sizeof(*ti));
 	return 0;
 }
 
+
+uint64 sys_mmap(void *addr, unsigned long long len, int port, int flag, int fd){
+	debugf("somw");
+	flag = 0;
+	fd = 0;
+	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
+		// printf("port input error");
+		return -1;
+	}
+	if (((uint64)addr & (PAGE_SIZE - 1)) != 0) {
+		return -1;
+	}
+	len = PGROUNDUP(len);
+	uint64 end = (uint64)addr + len;
+	pagetable_t pg = curr_proc()->pagetable;
+	for (uint64 vaddr = (uint64)addr; vaddr != end; vaddr += PAGE_SIZE) {
+		void *paddr = kalloc();
+		if (paddr == 0) {
+			printf("mmap physical memory is not enough!");
+			return -1;
+		}
+		mappages(pg, vaddr, PAGE_SIZE, (uint64)paddr, (port << 1) | PTE_U);
+		if(flag != 0){
+			printf("wa");
+			return -1;
+		}
+		
+	}
+	return 0;
+}
+
+uint64 sys_munmap(void *addr, unsigned long long len, int port, int flag, int fd){
+	flag = 0;
+	fd = 0;
+	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
+		panic("port input error");
+		return -1;
+	}
+	len = PGROUNDUP(len);
+	uint64 end = (uint64)addr + (uint64)len;
+	pagetable_t pg = curr_proc()->pagetable;
+	for (uint64 vaddr = (uint64)addr; vaddr != end; vaddr += PAGE_SIZE) {
+		uint64 pa = walkaddr(pg, vaddr);
+		if (pa == 0) {
+			panic("sys_munmap one page is not mapped!");
+			return -1;
+		}
+		uvmunmap(pg, vaddr, 1, 1);
+	}
+	return 0;
+}
 // TODO: add support for mmap and munmap syscall.
 // hint: read through docstrings in vm.c. Watching CH4 video may also help.
 // Note the return value and PTE flags (especially U,X,W,R)
@@ -91,7 +147,6 @@ void syscall()
 		break;
 	case SYS_exit:
 		sys_exit(args[0]);
-		// __builtin_unreachable();
 	case SYS_sched_yield:
 		ret = sys_sched_yield();
 		break;
@@ -100,6 +155,15 @@ void syscall()
 		break;
 	case SYS_sbrk:
 		ret = sys_sbrk(args[0]);
+		break;
+	case SYS_task_info:
+		ret = sys_task_info((TaskInfo *)args[0]);
+		break;
+	case SYS_mmap:
+		ret = sys_mmap((void *)args[0], (unsigned long long)args[1], (int)args[2],(int)args[3], (int)args[4]);
+		break;
+	case SYS_munmap:
+		ret = sys_munmap((void *)args[0], (uint64)args[1], (int)args[2],(int)args[3], (int)args[4]);
 		break;
 	/*
 	* LAB1: you may need to add SYS_taskinfo case here
