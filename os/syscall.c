@@ -64,8 +64,8 @@ uint64 sys_task_info(TaskInfo *ti){
 	uint64 cycle = get_cycle();
 	uint64 now = (cycle) * 1000 / CPU_FREQ;
 	ti_temp.time = now - curr_proc()->starttime;
-	memmove(ti_temp.syscall_times, curr_proc()->syscall_times, sizeof(ti_temp.syscall_times));
-	return copyout(curr_proc()->pagetable, (uint64)ti, (char *)&ti_temp,sizeof(*ti));
+	memmove(ti_temp.syscall_times, curr_proc()->syscall_times, sizeof(curr_proc()->syscall_times));
+	return copyout(curr_proc()->pagetable, (uint64)ti, (char *)&ti_temp,sizeof(ti_temp));
 }
 
 
@@ -103,7 +103,7 @@ uint64 sys_munmap(void *addr, unsigned long long len, int port, int flag, int fd
 	flag = 0;
 	fd = 0;
 	if ((port & ~0x7) != 0||(port & 0x7) == 0) {
-		panic("port input error");
+		// panic("port input error");
 		return -1;
 	}
 	len = PGROUNDUP(len);
@@ -112,7 +112,7 @@ uint64 sys_munmap(void *addr, unsigned long long len, int port, int flag, int fd
 	for (uint64 vaddr = (uint64)addr; vaddr != end; vaddr += PAGE_SIZE) {
 		uint64 pa = walkaddr(pg, vaddr);
 		if (pa == 0) {
-			panic("sys_munmap one page is not mapped!");
+			// panic("sys_munmap one page is not mapped!");
 			return -1;
 		}
 		uvmunmap(pg, vaddr, 1, 1);
