@@ -3,17 +3,13 @@
 
 #include "riscv.h"
 #include "types.h"
-<<<<<<< HEAD
 #include "queue.h"
 
 #define NPROC (512)
 #define FD_BUFFER_SIZE (16)
 
 struct file;
-=======
 #include "syscall_ids.h"
-#define NPROC (16)
->>>>>>> ch4
 
 // Saved registers for kernel context switches.
 struct context {
@@ -52,14 +48,11 @@ struct proc {
 	struct file *files[FD_BUFFER_SIZE];
 	uint64 program_brk;
 	uint64 heap_bottom;
-<<<<<<< HEAD
-=======
 	uint64 starttime;
 	unsigned int syscall_times[MAX_SYSCALL_NUM];
 	/*
 	* LAB1: you may need to add some new fields here
 	*/
->>>>>>> ch4
 };
 
 int cpuid();

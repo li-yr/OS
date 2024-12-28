@@ -108,24 +108,6 @@ void scheduler()
 {
 	struct proc *p;
 	for (;;) {
-		/*int has_proc = 0;
-		for (p = pool; p < &pool[NPROC]; p++) {
-			if (p->state == RUNNABLE) {
-				/*
-				* LAB1: you may need to init proc start time here
-				*/
-				if(p->starttime == 0){
-					uint64 cycle = get_cycle();
-					p->starttime = (cycle) * 1000 / CPU_FREQ;
-				}
-				p->state = RUNNING;
-				current_proc = p;
-				swtch(&idle.context, &p->context);
-			}
-		}
-		if(has_proc == 0) {
-			panic("all app are over!\n");
-		}*/
 		p = fetch_task();
 		if (p == NULL) {
 			panic("all app are over!\n");
