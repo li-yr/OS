@@ -4,12 +4,12 @@
 #include "riscv.h"
 #include "types.h"
 #include "queue.h"
+#include "syscall_ids.h"
 
 #define NPROC (512)
 #define FD_BUFFER_SIZE (16)
 
 struct file;
-#include "syscall_ids.h"
 
 // Saved registers for kernel context switches.
 struct context {
@@ -35,7 +35,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-	enum procstate state; // Process stated
+	enum procstate state; // Process state
 	int pid; // Process ID
 	pagetable_t pagetable; // User page table
 	uint64 ustack; // Virtual address of kernel stack
@@ -46,13 +46,10 @@ struct proc {
 	struct proc *parent; // Parent process
 	uint64 exit_code;
 	struct file *files[FD_BUFFER_SIZE];
-	uint64 program_brk;
-	uint64 heap_bottom;
-	uint64 starttime;
+	uint64 starttime; // The CPU cycle when the process starts
 	unsigned int syscall_times[MAX_SYSCALL_NUM];
-	/*
-	* LAB1: you may need to add some new fields here
-	*/
+	long long priority;
+	long long stride;
 };
 
 int cpuid();
@@ -64,14 +61,15 @@ void sched();
 void yield();
 int fork();
 int exec(char *);
+int spawn(char *name);
+int setpriority(long long prio);
 int wait(int, int *);
 void add_task(struct proc *);
 struct proc *pop_task();
 struct proc *allocproc();
+int proc_cmp(int id1, int id2);
 int fdalloc(struct file *);
 // swtch.S
 void swtch(struct context *, struct context *);
-
-int growproc(int n);
 
 #endif // PROC_H

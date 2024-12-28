@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "queue.h"
 #include "timer.h"
+#include <limits.h>
 
 struct proc pool[NPROC];
 __attribute__((aligned(16))) char kstack[NPROC][PAGE_SIZE];
@@ -14,6 +15,11 @@ extern char boot_stack_top[];
 struct proc *current_proc;
 struct proc idle;
 struct queue task_queue;
+
+#define BIG_STRIDE 65536
+#define INIT_PRIORITY 16
+#define MIN_PRIORITY 2
+#define MAX_PRIORITY LLONG_MAX
 
 int threadid()
 {
@@ -25,6 +31,12 @@ struct proc *curr_proc()
 	return current_proc;
 }
 
+int proc_cmp(int id1, int id2)
+{
+	return pool[id2].stride < pool[id1].stride;
+}
+
+
 // initialize the proc table at boot time.
 void proc_init()
 {
@@ -33,10 +45,6 @@ void proc_init()
 		p->state = UNUSED;
 		p->kstack = (uint64)kstack[p - pool];
 		p->trapframe = (struct trapframe *)trapframe[p - pool];
-		memset(&p->syscall_times, 0, sizeof(p->syscall_times));
-		/*
-		* LAB1: you may need to initialize your new fields of proc here
-		*/
 	}
 	idle.kstack = (uint64)boot_stack_top;
 	idle.pid = IDLE_PID;
@@ -89,13 +97,15 @@ found:
 	p->parent = NULL;
 	p->exit_code = 0;
 	p->pagetable = uvmcreate((uint64)p->trapframe);
-	p->program_brk = 0;
-    p->heap_bottom = 0;
 	memset(&p->context, 0, sizeof(p->context));
 	memset((void *)p->kstack, 0, KSTACK_SIZE);
 	memset((void *)p->trapframe, 0, TRAP_PAGE_SIZE);
 	p->context.ra = (uint64)usertrapret;
 	p->context.sp = p->kstack + KSTACK_SIZE;
+	p->starttime = 0;
+	memset(p->syscall_times, 0, sizeof(p->syscall_times));
+	p->priority = INIT_PRIORITY;
+	p->stride = 0;
 	return p;
 }
 
@@ -108,13 +118,31 @@ void scheduler()
 {
 	struct proc *p;
 	for (;;) {
+		/*int has_proc = 0;
+		for (p = pool; p < &pool[NPROC]; p++) {
+			if (p->state == RUNNABLE) {
+				has_proc = 1;
+				tracef("swtich to proc %d", p - pool);
+				p->state = RUNNING;
+				current_proc = p;
+				swtch(&idle.context, &p->context);
+			}
+		}
+		if(has_proc == 0) {
+			panic("all app are over!\n");
+		}*/
 		p = fetch_task();
 		if (p == NULL) {
 			panic("all app are over!\n");
 		}
 		tracef("swtich to proc %d", p - pool);
 		p->state = RUNNING;
+		if(p->starttime == 0){
+			uint64 cycle = get_cycle();
+			p->starttime = (cycle) * 1000 / CPU_FREQ;
+		}
 		current_proc = p;
+		p->stride += BIG_STRIDE / p->priority;
 		swtch(&idle.context, &p->context);
 	}
 }
@@ -194,6 +222,24 @@ int exec(char *name)
 	return 0;
 }
 
+int spawn(char *name)
+{
+	int id = get_id_by_name(name);
+	if (id < 0)
+		return -1;
+	struct proc *p = curr_proc();
+	struct proc *np = allocproc();
+	if (np == NULL) {
+		panic("In spawn: allocproc failed!\n");
+	}
+
+	loader(id, np);
+	np->parent = p;
+	add_task(np);
+	return np->pid;
+}
+
+
 int wait(int pid, int *code)
 {
 	struct proc *np;
@@ -244,26 +290,4 @@ void exit(int code)
 		}
 	}
 	sched();
-}
-
-// Grow or shrink user memory by n bytes.
-// Return 0 on succness, -1 on failure.
-int growproc(int n)
-{
-        uint64 program_brk;
-        struct proc *p = curr_proc();
-        program_brk = p->program_brk;
-        int new_brk = program_brk + n - p->heap_bottom;
-        if(new_brk < 0){
-                return -1;
-        }
-        if(n > 0){
-                if((program_brk = uvmalloc(p->pagetable, program_brk, program_brk + n, PTE_W)) == 0) {
-                        return -1;
-                }
-        } else if(n < 0){
-                program_brk = uvmdealloc(p->pagetable, program_brk, program_brk + n);
-        }
-        p->program_brk = program_brk;
-        return 0;
 }
