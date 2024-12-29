@@ -121,9 +121,8 @@ uint64 sys_spawn(uint64 va)
 {
 	// TODO: your job is to complete the sys call
 	struct proc *p = curr_proc();
-	char name[200];
-	copyinstr(p->pagetable, name, va, 200);
-	debugf("sys_spawn %s\n", name);
+	char name[255];
+	copyinstr(p->pagetable, name, va, 255);
 	return spawn(name);
 }
 
